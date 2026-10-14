@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width:860px">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.documents') }}">Documents</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('ai.view_document', doc_id=doc.id) }}">{{ doc.title | truncate(30) }}</a></li>
+      <li class="breadcrumb-item active">Results</li>
+    </ol>
+  </nav>
+
+  <!-- Score Banner -->
+  <div class="score-banner mb-4
+    {% if percentage >= 80 %}score-banner-great
+    {% elif percentage >= 60 %}score-banner-good
+    {% else %}score-banner-poor{% endif %}">
+    <div class="score-circle">
+      <div class="score-pct">{{ "%.0f"|format(percentage) }}%</div>
+      <div class="score-frac">{{ score }}/{{ total }}</div>
+    </div>
+    <div>
+      <h5 class="fw-bold mb-1">
+        {% if percentage >= 80 %}Excellent work!
+        {% elif percentage >= 60 %}Good effort!
+        {% else %}Keep practising!{% endif %}
+      </h5>
+      <p class="mb-0 opacity-80">
+        You answered {{ score }} out of {{ total }} questions correctly.
+      </p>
+    </div>
+  </div>
+
+  <!-- Detailed Results -->
+  {% for r in results %}
+  <div class="dashboard-card mb-3">
+    <div class="dashboard-card-body">
+      <div class="d-flex align-items-start gap-3">
+        <div class="result-icon {{ 'result-correct' if r.correct else 'result-wrong' }}">
+          <i class="bi {{ 'bi-check-lg' if r.correct else 'bi-x-lg' }}"></i>
+        </div>
+        <div class="flex-fill">
+          <p class="fw-semibold mb-2">{{ loop.index }}. {{ r.question }}</p>
+          <div class="result-options">
+            {% for key, text in [('A', r.option_a), ('B', r.option_b), ('C', r.option_c), ('D', r.option_d)] %}
+            <div class="result-option
+              {% if key == r.correct_answer %}result-opt-correct
+              {% elif key == r.user_answer and not r.correct %}result-opt-wrong{% endif %}">
+              <span class="quiz-opt-key-sm">{{ key }}</span>
+              {{ text }}
+              {% if key == r.correct_answer %}
+                <i class="bi bi-check-circle-fill text-success ms-1"></i>
+              {% elif key == r.user_answer and not r.correct %}
+                <i class="bi bi-x-circle-fill text-danger ms-1"></i>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% if r.explanation %}
+          <div class="result-explanation mt-2">
+            <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+            <strong>Explanation:</strong> {{ r.explanation }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="d-flex gap-3 justify-content-between mt-4 flex-wrap">
+    <a href="{{ url_for('ai.view_document', doc_id=doc.id) }}" class="btn btn-secondary px-4">
+      <i class="bi bi-arrow-left me-1"></i>Back to Document
+    </a>
+    <a href="{{ url_for('ai.take_quiz', doc_id=doc.id) }}" class="btn btn-warning px-4 fw-semibold">
+      <i class="bi bi-arrow-clockwise me-1"></i>Retake Quiz
+    </a>
+  </div>
+</div>
+{% endblock %}

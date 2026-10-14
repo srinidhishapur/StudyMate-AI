@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:700px">
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0">My Profile</h4>
+        <p class="text-muted mb-0 small">Manage your account information</p>
+    </div>
+
+    <div class="dashboard-card mb-4">
+        <div class="dashboard-card-body">
+            <div class="d-flex align-items-center gap-4 mb-4">
+                <div class="user-avatar-lg">
+                    {{ (current_user.full_name or current_user.username)[0].upper() }}
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">{{ current_user.full_name or current_user.username }}</h5>
+                    <div class="text-muted">@{{ current_user.username }}</div>
+                    <div class="text-muted small">{{ current_user.email }}</div>
+                    <div class="text-muted small mt-1">
+                        Member since {{ current_user.created_at.strftime('%B %Y') }}
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('main.profile') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Full Name</label>
+                    <input type="text" name="full_name" class="form-control"
+                           value="{{ current_user.full_name or '' }}"
+                           placeholder="Your full name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Username</label>
+                    <input type="text" class="form-control bg-light" value="{{ current_user.username }}" disabled>
+                    <div class="form-text">Username cannot be changed.</div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-medium">Email Address</label>
+                    <input type="email" class="form-control bg-light" value="{{ current_user.email }}" disabled>
+                    <div class="form-text">Email cannot be changed from this page.</div>
+                </div>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-floppy me-2"></i>Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h6 class="fw-semibold mb-0">Account Statistics</h6>
+        </div>
+        <div class="dashboard-card-body">
+            <div class="row g-3 text-center">
+                <div class="col-4">
+                    <div class="h4 fw-bold text-primary mb-0">{{ current_user.get_document_count() }}</div>
+                    <div class="text-muted small">Documents</div>
+                </div>
+                <div class="col-4">
+                    <div class="h4 fw-bold text-purple mb-0">{{ current_user.get_study_plan_count() }}</div>
+                    <div class="text-muted small">Study Plans</div>
+                </div>
+                <div class="col-4">
+                    <div class="h4 fw-bold text-success mb-0">{{ current_user.get_quiz_count() }}</div>
+                    <div class="text-muted small">Quizzes Taken</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

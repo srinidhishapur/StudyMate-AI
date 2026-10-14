@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Study Plans{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">Study Plans</h4>
+            <p class="text-muted mb-0 small">Manage your personalized learning schedules</p>
+        </div>
+        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#newPlanModal">
+            <i class="bi bi-plus-circle me-1"></i>New Plan
+        </button>
+    </div>
+
+    {% if plans %}
+    <div class="row g-3">
+        {% for plan in plans %}
+        <div class="col-md-6 col-xl-4">
+            <div class="plan-detail-card">
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <div>
+                        <h6 class="fw-semibold mb-0">{{ plan.title | truncate(40) }}</h6>
+                        {% if plan.subject %}
+                        <small class="text-muted"><i class="bi bi-book me-1"></i>{{ plan.subject }}</small>
+                        {% endif %}
+                    </div>
+                    <span class="badge
+                        {% if plan.status == 'active' %}bg-success
+                        {% elif plan.status == 'completed' %}bg-primary
+                        {% else %}bg-secondary{% endif %}">
+                        {{ plan.status.title() }}
+                    </span>
+                </div>
+
+                {% if plan.goal %}
+                <p class="text-muted small mb-3">{{ plan.goal | truncate(80) }}</p>
+                {% endif %}
+
+                <div class="d-flex gap-3 mb-3">
+                    <div class="text-center">
+                        <div class="fw-semibold small">{{ plan.duration_days }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Days</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fw-semibold small text-capitalize">{{ plan.difficulty }}</div>
+                        <div class="text-muted" style="font-size:0.7rem">Difficulty</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fw-semibold small">{{ plan.progress_percent }}%</div>
+                        <div class="text-muted" style="font-size:0.7rem">Complete</div>
+                    </div>
+                </div>
+
+                <div class="progress mb-3" style="height:6px">
+                    <div class="progress-bar bg-primary" style="width:{{ plan.progress_percent }}%"></div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('ai.view_study_plan', plan_id=plan.id) }}"
+                       class="btn btn-primary btn-sm flex-fill">
+                        <i class="bi bi-magic me-1"></i>View / Generate AI
+                    </a>
+                    <form method="POST" action="{{ url_for('main.delete_study_plan', plan_id=plan.id) }}"
+                          onsubmit="return confirm('Delete this study plan?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-page">
+        <i class="bi bi-calendar-plus fs-1 text-primary opacity-50"></i>
+        <h5 class="mt-3 fw-semibold">No study plans yet</h5>
+        <p class="text-muted">Create your first AI-powered personalized study plan</p>
+        <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#newPlanModal">
+            <i class="bi bi-plus-circle me-2"></i>Create Study Plan
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Plan Modal -->
+<div class="modal fade" id="newPlanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Create Study Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.create_study_plan') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Plan Title</label>
+                        <input type="text" name="title" class="form-control"
+                               placeholder="e.g. Final Exam Preparation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Subject</label>
+                        <input type="text" name="subject" class="form-control"
+                               placeholder="e.g. Organic Chemistry">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Goal</label>
+                        <textarea name="goal" class="form-control" rows="2"
+                                  placeholder="What do you want to achieve?"></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-medium">Duration (days)</label>
+                            <input type="number" name="duration_days" class="form-control"
+                                   value="30" min="1" max="365">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium">Difficulty</label>
+                            <select name="difficulty" class="form-select">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-plus-circle me-2"></i>Create Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

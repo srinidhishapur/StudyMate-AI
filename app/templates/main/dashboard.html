@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block main_class %}dashboard-layout{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">
+                Good {% if now.hour < 12 %}Morning{% elif now.hour < 17 %}Afternoon{% else %}Evening{% endif %},
+                {{ current_user.full_name or current_user.username }}! 👋
+            </h4>
+            <p class="text-muted mb-0 small">Here's your study overview for today</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.documents') }}" class="btn btn-primary btn-sm px-3">
+                <i class="bi bi-plus-circle me-1"></i>Upload Material
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-card-blue">
+                <div class="stat-card-icon">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ doc_count }}</div>
+                    <div class="stat-label">Documents Uploaded</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-card-purple">
+                <div class="stat-card-icon">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ plan_count }}</div>
+                    <div class="stat-label">Study Plans</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-card-green">
+                <div class="stat-card-icon">
+                    <i class="bi bi-patch-check-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ quiz_count }}</div>
+                    <div class="stat-label">Quizzes Taken</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card stat-card-orange">
+                <div class="stat-card-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ "%.0f"|format(avg_score) }}%</div>
+                    <div class="stat-label">Avg. Quiz Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row g-4">
+
+        <!-- Weekly Activity Chart -->
+        <div class="col-lg-8">
+            <div class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h6 class="fw-semibold mb-0">Weekly Activity</h6>
+                        <small class="text-muted">Last 7 days learning activity</small>
+                    </div>
+                    <a href="{{ url_for('main.progress') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="dashboard-card-body">
+                    <canvas id="weeklyChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <h6 class="fw-semibold mb-0">Quick Actions</h6>
+                </div>
+                <div class="dashboard-card-body p-0">
+                    <div class="quick-action-list">
+                        <a href="{{ url_for('main.documents') }}" class="quick-action-item">
+                            <div class="quick-action-icon bg-blue-soft">
+                                <i class="bi bi-cloud-upload text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-medium small">Upload Study Material</div>
+                                <div class="text-muted" style="font-size:0.75rem">PDF or TXT files</div>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                        <a href="#" class="quick-action-item ai-feature-coming">
+                            <div class="quick-action-icon bg-warning-soft">
+                                <i class="bi bi-magic text-warning"></i>
+                            </div>
+                            <div>
+                                <div class="fw-medium small">Generate Summary</div>
+                                <div class="text-muted" style="font-size:0.75rem">AI-powered notes</div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.65rem">AI</span>
+                        </a>
+                        <a href="#" class="quick-action-item ai-feature-coming">
+                            <div class="quick-action-icon bg-success-soft">
+                                <i class="bi bi-ui-checks text-success"></i>
+                            </div>
+                            <div>
+                                <div class="fw-medium small">Take a Quiz</div>
+                                <div class="text-muted" style="font-size:0.75rem">Auto-generated MCQs</div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.65rem">AI</span>
+                        </a>
+                        <a href="{{ url_for('main.study_plans') }}" class="quick-action-item">
+                            <div class="quick-action-icon bg-purple-soft">
+                                <i class="bi bi-calendar2-plus text-purple"></i>
+                            </div>
+                            <div>
+                                <div class="fw-medium small">Create Study Plan</div>
+                                <div class="text-muted" style="font-size:0.75rem">Personalized schedule</div>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                        <a href="#" class="quick-action-item ai-feature-coming">
+                            <div class="quick-action-icon bg-info-soft">
+                                <i class="bi bi-chat-dots text-info"></i>
+                            </div>
+                            <div>
+                                <div class="fw-medium small">Chat with Notes</div>
+                                <div class="text-muted" style="font-size:0.75rem">RAG-powered Q&amp;A</div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.65rem">AI</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Documents -->
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h6 class="fw-semibold mb-0">Recent Documents</h6>
+                        <small class="text-muted">Your latest uploaded materials</small>
+                    </div>
+                    <a href="{{ url_for('main.documents') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="dashboard-card-body p-0">
+                    {% if recent_docs %}
+                    <div class="doc-list">
+                        {% for doc in recent_docs %}
+                        <div class="doc-list-item">
+                            <div class="doc-icon {{ 'doc-icon-pdf' if doc.file_type == 'pdf' else 'doc-icon-txt' }}">
+                                <i class="bi {{ 'bi-file-earmark-pdf' if doc.file_type == 'pdf' else 'bi-file-earmark-text' }}"></i>
+                            </div>
+                            <div class="doc-info">
+                                <div class="doc-title">{{ doc.title | truncate(40) }}</div>
+                                <div class="doc-meta text-muted">
+                                    {{ doc.file_type.upper() }} &bull;
+                                    {{ doc.get_size_display() }} &bull;
+                                    {{ doc.uploaded_at.strftime('%b %d, %Y') }}
+                                </div>
+                            </div>
+                            <span class="badge doc-status-badge
+                                {% if doc.status == 'ready' %}bg-success
+                                {% elif doc.status == 'processing' %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}">
+                                {{ doc.status.title() }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-3">No documents yet</p>
+                        <a href="{{ url_for('main.documents') }}" class="btn btn-primary btn-sm">
+                            Upload Your First Document
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h6 class="fw-semibold mb-0">Recent Activity</h6>
+                        <small class="text-muted">Your learning history</small>
+                    </div>
+                    <a href="{{ url_for('main.progress') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="dashboard-card-body p-0">
+                    {% if recent_activity %}
+                    <div class="activity-list">
+                        {% for act in recent_activity %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                {% if act.activity_type == 'document_upload' %}
+                                <i class="bi bi-cloud-upload-fill text-primary"></i>
+                                {% elif act.activity_type == 'quiz_completed' %}
+                                <i class="bi bi-patch-check-fill text-success"></i>
+                                {% elif act.activity_type == 'flashcard_review' %}
+                                <i class="bi bi-card-text text-warning"></i>
+                                {% elif act.activity_type == 'summary_generated' %}
+                                <i class="bi bi-magic text-purple"></i>
+                                {% elif act.activity_type == 'account_created' %}
+                                <i class="bi bi-person-check-fill text-info"></i>
+                                {% else %}
+                                <i class="bi bi-activity text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title small fw-medium">
+                                    {{ act.activity_type.replace('_', ' ').title() }}
+                                </div>
+                                {% if act.activity_detail %}
+                                <div class="activity-detail text-muted" style="font-size:0.75rem">
+                                    {{ act.activity_detail | truncate(50) }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="activity-time text-muted" style="font-size:0.7rem">
+                                {{ act.recorded_at.strftime('%b %d') }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-activity fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No activity recorded yet.<br>Start studying to see your progress!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Study Plans -->
+        {% if active_plans %}
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h6 class="fw-semibold mb-0">Active Study Plans</h6>
+                        <small class="text-muted">Your ongoing learning goals</small>
+                    </div>
+                    <a href="{{ url_for('main.study_plans') }}" class="btn btn-sm btn-outline-primary">Manage Plans</a>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="row g-3">
+                        {% for plan in active_plans %}
+                        <div class="col-md-4">
+                            <div class="plan-card">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div class="fw-semibold small">{{ plan.title | truncate(35) }}</div>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle small">Active</span>
+                                </div>
+                                {% if plan.subject %}
+                                <div class="text-muted small mb-2">
+                                    <i class="bi bi-book me-1"></i>{{ plan.subject }}
+                                </div>
+                                {% endif %}
+                                <div class="progress mb-1" style="height:6px">
+                                    <div class="progress-bar bg-primary" style="width:{{ plan.progress_percent }}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">{{ plan.progress_percent }}% complete</small>
+                                    <small class="text-muted">{{ plan.duration_days }} days</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Weekly Activity Chart
+const weeklyData = {{ weekly_data | tojson }};
+const ctx = document.getElementById('weeklyChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: weeklyData.map(d => d.day),
+        datasets: [{
+            label: 'Activities',
+            data: weeklyData.map(d => d.count),
+            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+            borderColor: 'rgba(99, 102, 241, 0.9)',
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.raw} activities`
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, color: '#6b7280' },
+                grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+                ticks: { color: '#6b7280' },
+                grid: { display: false }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

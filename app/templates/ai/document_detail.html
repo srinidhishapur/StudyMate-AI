@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.documents') }}">Documents</a></li>
+      <li class="breadcrumb-item active">{{ doc.title | truncate(40) }}</li>
+    </ol>
+  </nav>
+
+  <!-- Doc Header -->
+  <div class="d-flex align-items-start gap-3 mb-4 flex-wrap">
+    <div class="doc-icon-xl {{ 'doc-icon-pdf' if doc.file_type == 'pdf' else 'doc-icon-txt' }}">
+      <i class="bi {{ 'bi-file-earmark-pdf-fill' if doc.file_type == 'pdf' else 'bi-file-earmark-text-fill' }}"></i>
+    </div>
+    <div class="flex-fill">
+      <h4 class="fw-bold mb-1">{{ doc.title }}</h4>
+      <div class="text-muted small d-flex gap-3 flex-wrap">
+        {% if doc.subject %}<span><i class="bi bi-book me-1"></i>{{ doc.subject }}</span>{% endif %}
+        <span><i class="bi bi-file-earmark me-1"></i>{{ doc.file_type.upper() }}</span>
+        <span><i class="bi bi-hdd me-1"></i>{{ doc.get_size_display() }}</span>
+        {% if doc.page_count %}<span><i class="bi bi-file-text me-1"></i>{{ doc.page_count }} pages</span>{% endif %}
+        {% if doc.word_count %}<span><i class="bi bi-fonts me-1"></i>{{ doc.word_count | format_number }} words</span>{% endif %}
+        <span><i class="bi bi-calendar me-1"></i>{{ doc.uploaded_at.strftime('%b %d, %Y') }}</span>
+      </div>
+      {% if doc.description %}
+      <p class="text-muted small mt-1 mb-0">{{ doc.description }}</p>
+      {% endif %}
+    </div>
+    <span class="badge fs-6 align-self-start
+      {% if doc.status == 'ready' %}bg-success
+      {% elif doc.status == 'processing' %}bg-warning text-dark
+      {% elif doc.status == 'error' %}bg-danger
+      {% else %}bg-secondary{% endif %}">
+      {% if doc.status == 'processing' %}
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      {% endif %}
+      {{ doc.status.title() }}
+    </span>
+  </div>
+
+  {% if not watsonx_ready %}
+  <div class="alert alert-warning d-flex align-items-start gap-3 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-4 mt-1 flex-shrink-0"></i>
+    <div>
+      <strong>IBM watsonx AI not configured.</strong>
+      Add <code>WATSONX_API_KEY</code> and <code>WATSONX_PROJECT_ID</code> to your
+      <code>.env</code> file to unlock all AI features.
+      <a href="https://cloud.ibm.com/watsonx" target="_blank" class="alert-link">
+        Get free credentials &rarr;
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI Feature Cards -->
+  <div class="row g-3 mb-4">
+
+    <!-- Summary -->
+    <div class="col-md-6 col-xl-3">
+      <div class="ai-feature-card">
+        <div class="ai-feature-icon bg-primary-soft">
+          <i class="bi bi-file-earmark-richtext text-primary fs-3"></i>
+        </div>
+        <h6 class="fw-semibold mt-3 mb-1">AI Summary</h6>
+        <p class="text-muted small mb-3">Exam-oriented summary with key concepts and important points.</p>
+        <div class="d-flex gap-2 mt-auto">
+          {% if doc.summary %}
+          <a href="{{ url_for('ai.view_summary', doc_id=doc.id) }}" class="btn btn-primary btn-sm flex-fill">
+            <i class="bi bi-eye me-1"></i>View
+          </a>
+          {% endif %}
+          <form method="POST" action="{{ url_for('ai.summarize', doc_id=doc.id) }}" class="flex-fill">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm w-100"
+                    {{ 'disabled' if not watsonx_ready }}>
+              <i class="bi bi-magic me-1"></i>{{ 'Re-generate' if doc.summary else 'Generate' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="col-md-6 col-xl-3">
+      <div class="ai-feature-card">
+        <div class="ai-feature-icon bg-warning-soft">
+          <i class="bi bi-patch-question-fill text-warning fs-3"></i>
+        </div>
+        <h6 class="fw-semibold mt-3 mb-1">Quiz Generator</h6>
+        <p class="text-muted small mb-3">Auto-generate MCQ questions with answers and explanations.</p>
+        <div class="d-flex gap-2 mt-auto">
+          {% if questions %}
+          <a href="{{ url_for('ai.take_quiz', doc_id=doc.id) }}" class="btn btn-warning btn-sm flex-fill">
+            <i class="bi bi-play-fill me-1"></i>Take Quiz ({{ questions|length }}Q)
+          </a>
+          {% endif %}
+          <button type="button" class="btn btn-outline-warning btn-sm flex-fill"
+                  {{ 'disabled' if not watsonx_ready }}
+                  data-bs-toggle="modal" data-bs-target="#quizModal">
+            <i class="bi bi-magic me-1"></i>{{ 'Re-generate' if questions else 'Generate' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flashcards -->
+    <div class="col-md-6 col-xl-3">
+      <div class="ai-feature-card">
+        <div class="ai-feature-icon bg-success-soft">
+          <i class="bi bi-card-text text-success fs-3"></i>
+        </div>
+        <h6 class="fw-semibold mt-3 mb-1">Flashcards</h6>
+        <p class="text-muted small mb-3">Create digital flashcards for spaced repetition learning.</p>
+        <div class="d-flex gap-2 mt-auto">
+          {% if cards %}
+          <a href="{{ url_for('ai.review_flashcards', doc_id=doc.id) }}" class="btn btn-success btn-sm flex-fill">
+            <i class="bi bi-play-fill me-1"></i>Review ({{ cards|length }})
+          </a>
+          {% endif %}
+          <button type="button" class="btn btn-outline-success btn-sm flex-fill"
+                  {{ 'disabled' if not watsonx_ready }}
+                  data-bs-toggle="modal" data-bs-target="#flashcardModal">
+            <i class="bi bi-magic me-1"></i>{{ 'Re-generate' if cards else 'Generate' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="col-md-6 col-xl-3">
+      <div class="ai-feature-card">
+        <div class="ai-feature-icon bg-info-soft">
+          <i class="bi bi-chat-dots-fill text-info fs-3"></i>
+        </div>
+        <h6 class="fw-semibold mt-3 mb-1">Chat with Notes</h6>
+        <p class="text-muted small mb-3">Ask questions about your document using RAG-powered AI.</p>
+        <div class="mt-auto">
+          <a href="{{ url_for('ai.chat', doc_id=doc.id) }}"
+             class="btn btn-info btn-sm w-100 text-white {{ 'disabled' if not watsonx_ready }}">
+            <i class="bi bi-chat-dots me-1"></i>Open Chat
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Preview -->
+  {% if doc.summary %}
+  <div class="dashboard-card mb-4">
+    <div class="dashboard-card-header">
+      <div>
+        <h6 class="fw-semibold mb-0"><i class="bi bi-file-earmark-richtext me-2 text-primary"></i>Summary Preview</h6>
+        <small class="text-muted">AI-generated exam summary</small>
+      </div>
+      <a href="{{ url_for('ai.view_summary', doc_id=doc.id) }}" class="btn btn-sm btn-outline-primary">Full View</a>
+    </div>
+    <div class="dashboard-card-body">
+      <div class="summary-preview">{{ doc.summary[:500] }}{% if doc.summary|length > 500 %}…{% endif %}</div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Quiz Generation Modal -->
+<div class="modal fade" id="quizModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0"><h6 class="modal-title fw-bold">Generate Quiz</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('ai.generate_quiz', doc_id=doc.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <label class="form-label fw-medium">Number of Questions</label>
+          <select name="num_questions" class="form-select">
+            <option value="3">3 questions</option>
+            <option value="5" selected>5 questions</option>
+            <option value="7">7 questions</option>
+            <option value="10">10 questions</option>
+          </select>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm px-4">
+            <i class="bi bi-magic me-1"></i>Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Flashcard Generation Modal -->
+<div class="modal fade" id="flashcardModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0"><h6 class="modal-title fw-bold">Generate Flashcards</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('ai.generate_flashcards', doc_id=doc.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <label class="form-label fw-medium">Number of Flashcards</label>
+          <select name="num_cards" class="form-select">
+            <option value="4">4 cards</option>
+            <option value="8" selected>8 cards</option>
+            <option value="12">12 cards</option>
+            <option value="15">15 cards</option>
+          </select>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm px-4">
+            <i class="bi bi-magic me-1"></i>Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

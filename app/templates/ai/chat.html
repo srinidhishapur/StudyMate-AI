@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block main_class %}chat-page-layout{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+
+  <!-- Sidebar -->
+  <div class="chat-sidebar">
+    <div class="chat-sidebar-header">
+      <div class="doc-icon-sm {{ 'doc-icon-pdf' if doc.file_type == 'pdf' else 'doc-icon-txt' }}">
+        <i class="bi {{ 'bi-file-earmark-pdf-fill' if doc.file_type == 'pdf' else 'bi-file-earmark-text-fill' }}"></i>
+      </div>
+      <div class="ms-2 overflow-hidden">
+        <div class="fw-semibold small text-truncate">{{ doc.title }}</div>
+        <div class="text-muted" style="font-size:0.72rem">{{ doc.file_type.upper() }} &bull; {{ doc.get_size_display() }}</div>
+      </div>
+    </div>
+
+    <div class="chat-sidebar-body">
+      <div class="small text-muted mb-2 px-3 pt-2 fw-medium">Tips</div>
+      <div class="chat-tip"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Ask specific questions about topics in your document.</div>
+      <div class="chat-tip"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Request explanations, comparisons, or examples.</div>
+      <div class="chat-tip"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Ask for a quick definition of a term.</div>
+      <div class="chat-tip"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Use <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line.</div>
+    </div>
+
+    <div class="chat-sidebar-footer">
+      <a href="{{ url_for('ai.view_document', doc_id=doc.id) }}" class="btn btn-sm btn-outline-secondary w-100">
+        <i class="bi bi-arrow-left me-1"></i>Back to Document
+      </a>
+      <button class="btn btn-sm btn-outline-danger w-100 mt-2" onclick="clearChat()">
+        <i class="bi bi-trash me-1"></i>Clear Chat
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat Main -->
+  <div class="chat-main">
+    <div class="chat-header">
+      <div class="d-flex align-items-center gap-2">
+        <div class="chat-avatar-ai"><i class="bi bi-robot"></i></div>
+        <div>
+          <div class="fw-semibold">StudyMate AI Tutor</div>
+          <div class="small text-muted">Powered by IBM watsonx</div>
+        </div>
+      </div>
+      {% if not watsonx_ready %}
+      <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Not Configured</span>
+      {% else %}
+      <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:0.5em"></i>Online</span>
+      {% endif %}
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <!-- Welcome message -->
+      <div class="chat-msg-row ai">
+        <div class="chat-avatar-ai-sm"><i class="bi bi-robot"></i></div>
+        <div class="chat-bubble ai-bubble">
+          <p class="mb-1">Hello! I'm your AI study tutor. I've read <strong>{{ doc.title }}</strong> and I'm ready to help you understand it.</p>
+          <p class="mb-0 small opacity-75">Ask me anything about the content — concepts, definitions, examples, or exam tips!</p>
+        </div>
+      </div>
+
+      <!-- Existing history -->
+      {% for msg in history %}
+      <div class="chat-msg-row {{ msg.role }}">
+        {% if msg.role == 'assistant' %}
+        <div class="chat-avatar-ai-sm"><i class="bi bi-robot"></i></div>
+        {% endif %}
+        <div class="chat-bubble {{ 'ai-bubble' if msg.role == 'assistant' else 'user-bubble' }}">
+          {{ msg.content }}
+        </div>
+        {% if msg.role == 'user' %}
+        <div class="chat-avatar-user-sm">{{ (current_user.full_name or current_user.username)[0].upper() }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input Area -->
+    <div class="chat-input-area">
+      {% if not watsonx_ready %}
+      <div class="alert alert-warning small mb-2 py-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Add <code>WATSONX_API_KEY</code> and <code>WATSONX_PROJECT_ID</code> to your .env to enable chat.
+      </div>
+      {% endif %}
+      <div class="chat-input-row">
+        <textarea id="chatInput" class="chat-input" placeholder="Ask a question about your document…"
+                  rows="1" {{ 'disabled' if not watsonx_ready }}
+                  onkeydown="handleKey(event)"></textarea>
+        <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()"
+                {{ 'disabled' if not watsonx_ready }}>
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const DOC_ID = {{ doc.id }};
+const CSRF_TOKEN = "{{ csrf_token() }}";
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function scrollToBottom() {
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+scrollToBottom();
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// Auto-resize textarea
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+});
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  // Append user bubble
+  appendBubble('user', text);
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  // Show typing indicator
+  const typingId = appendTyping();
+  sendBtn.disabled = true;
+
+  try {
+    const resp = await fetch(`/ai/chat/${DOC_ID}/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN
+      },
+      body: JSON.stringify({message: text})
+    });
+    const data = await resp.json();
+    removeTyping(typingId);
+    if (data.answer) {
+      appendBubble('assistant', data.answer);
+    } else {
+      appendBubble('assistant', data.error || 'Sorry, something went wrong.');
+    }
+  } catch (err) {
+    removeTyping(typingId);
+    appendBubble('assistant', 'Network error. Please try again.');
+  }
+  sendBtn.disabled = false;
+  chatInput.focus();
+}
+
+function appendBubble(role, text) {
+  const row = document.createElement('div');
+  row.className = `chat-msg-row ${role}`;
+
+  const isAI = role === 'assistant';
+  const avatarHTML = isAI
+    ? `<div class="chat-avatar-ai-sm"><i class="bi bi-robot"></i></div>`
+    : `<div class="chat-avatar-user-sm">{{ (current_user.full_name or current_user.username)[0].upper() }}</div>`;
+
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${isAI ? 'ai-bubble' : 'user-bubble'}`;
+  bubble.textContent = text;
+
+  if (isAI) {
+    row.appendChild(document.createRange().createContextualFragment(avatarHTML));
+    row.appendChild(bubble);
+  } else {
+    row.appendChild(bubble);
+    row.appendChild(document.createRange().createContextualFragment(avatarHTML));
+  }
+
+  chatMessages.appendChild(row);
+  scrollToBottom();
+}
+
+function appendTyping() {
+  const id = 'typing-' + Date.now();
+  const row = document.createElement('div');
+  row.id = id;
+  row.className = 'chat-msg-row assistant';
+  row.innerHTML = `<div class="chat-avatar-ai-sm"><i class="bi bi-robot"></i></div>
+    <div class="chat-bubble ai-bubble typing-bubble">
+      <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+    </div>`;
+  chatMessages.appendChild(row);
+  scrollToBottom();
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+async function clearChat() {
+  if (!confirm('Clear all chat history for this document?')) return;
+  await fetch(`/ai/chat/${DOC_ID}/clear`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json'}
+  });
+  // Remove all messages except the welcome
+  const rows = chatMessages.querySelectorAll('.chat-msg-row');
+  rows.forEach((r, i) => { if (i > 0) r.remove(); });
+}
+</script>
+{% endblock %}

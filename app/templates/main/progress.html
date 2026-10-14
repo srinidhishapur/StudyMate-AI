@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Learning Progress{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0">Learning Progress</h4>
+        <p class="text-muted mb-0 small">Track your study achievements and performance</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="stat-card stat-card-blue">
+                <div class="stat-card-icon">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ total_docs }}</div>
+                    <div class="stat-label">Documents Studied</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card stat-card-green">
+                <div class="stat-card-icon">
+                    <i class="bi bi-patch-check-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ total_quizzes }}</div>
+                    <div class="stat-label">Quizzes Completed</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="stat-card stat-card-orange">
+                <div class="stat-card-icon">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                <div class="stat-card-body">
+                    <div class="stat-value">{{ "%.0f"|format(avg_score) }}%</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Quiz History -->
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h6 class="fw-semibold mb-0">Quiz History</h6>
+                </div>
+                <div class="dashboard-card-body p-0">
+                    {% if all_quizzes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Date</th>
+                                    <th>Score</th>
+                                    <th>Percentage</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quiz in all_quizzes %}
+                                <tr>
+                                    <td class="ps-3 text-muted small">{{ quiz.attempted_at.strftime('%b %d, %Y') }}</td>
+                                    <td class="small fw-medium">{{ quiz.score }}/{{ quiz.total_questions }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-fill" style="height:6px;width:80px">
+                                                <div class="progress-bar
+                                                    {% if quiz.percentage >= 80 %}bg-success
+                                                    {% elif quiz.percentage >= 60 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}"
+                                                     style="width:{{ quiz.percentage }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ "%.0f"|format(quiz.percentage) }}%</small>
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">
+                                        {% if quiz.time_taken_seconds %}
+                                        {{ quiz.time_taken_seconds // 60 }}m {{ quiz.time_taken_seconds % 60 }}s
+                                        {% else %}—{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-patch-question fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No quizzes taken yet.<br>
+                            Upload a document and generate a quiz to start tracking.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent 30-Day Activity -->
+        <div class="col-lg-4">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h6 class="fw-semibold mb-0">30-Day Activity</h6>
+                </div>
+                <div class="dashboard-card-body p-0">
+                    {% if monthly_activity %}
+                    <div class="activity-list">
+                        {% for act in monthly_activity[:15] %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                {% if act.activity_type == 'document_upload' %}
+                                <i class="bi bi-cloud-upload-fill text-primary"></i>
+                                {% elif act.activity_type == 'quiz_completed' %}
+                                <i class="bi bi-patch-check-fill text-success"></i>
+                                {% elif act.activity_type == 'account_created' %}
+                                <i class="bi bi-person-check-fill text-info"></i>
+                                {% else %}
+                                <i class="bi bi-activity text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <div class="activity-content">
+                                <div class="small fw-medium">{{ act.activity_type.replace('_',' ').title() }}</div>
+                                {% if act.activity_detail %}
+                                <div class="text-muted" style="font-size:0.72rem">{{ act.activity_detail | truncate(40) }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted" style="font-size:0.7rem">{{ act.recorded_at.strftime('%b %d') }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-calendar3 fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">No activity in the last 30 days.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

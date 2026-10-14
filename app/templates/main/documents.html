@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}My Documents{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">My Documents</h4>
+            <p class="text-muted mb-0 small">Manage your uploaded study materials</p>
+        </div>
+        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-cloud-upload me-1"></i>Upload Document
+        </button>
+    </div>
+
+    {% if docs.items %}
+    <div class="row g-3">
+        {% for doc in docs.items %}
+        <div class="col-sm-6 col-xl-4">
+            <div class="doc-card">
+                <div class="doc-card-header">
+                    <div class="doc-card-icon {{ 'doc-icon-pdf' if doc.file_type == 'pdf' else 'doc-icon-txt' }}">
+                        <i class="bi {{ 'bi-file-earmark-pdf-fill' if doc.file_type == 'pdf' else 'bi-file-earmark-text-fill' }} fs-3"></i>
+                    </div>
+                    <span class="badge ms-auto
+                        {% if doc.status == 'ready' %}bg-success
+                        {% elif doc.status == 'processing' %}bg-warning text-dark
+                        {% else %}bg-secondary{% endif %}">
+                        {{ doc.status.title() }}
+                    </span>
+                </div>
+                <div class="doc-card-body">
+                    <h6 class="fw-semibold mb-1" title="{{ doc.title }}">{{ doc.title | truncate(45) }}</h6>
+                    {% if doc.subject %}
+                    <div class="text-muted small mb-1"><i class="bi bi-book me-1"></i>{{ doc.subject }}</div>
+                    {% endif %}
+                    <div class="text-muted small">
+                        {{ doc.file_type.upper() }} &bull; {{ doc.get_size_display() }} &bull;
+                        {{ doc.uploaded_at.strftime('%b %d, %Y') }}
+                    </div>
+                </div>
+                <div class="doc-card-footer d-flex gap-2">
+                    <a href="{{ url_for('ai.view_document', doc_id=doc.id) }}"
+                       class="btn btn-primary btn-sm flex-fill">
+                        <i class="bi bi-magic me-1"></i>AI Tools
+                    </a>
+                    <a href="{{ url_for('ai.chat', doc_id=doc.id) }}"
+                       class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-chat-dots"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if docs.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if docs.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.documents', page=docs.prev_num) }}">Previous</a>
+            </li>
+            {% endif %}
+            {% for page_num in docs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                <li class="page-item {% if page_num == docs.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('main.documents', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if docs.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('main.documents', page=docs.next_num) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state-page">
+        <i class="bi bi-cloud-upload fs-1 text-primary opacity-50"></i>
+        <h5 class="mt-3 fw-semibold">No documents yet</h5>
+        <p class="text-muted">Upload your first PDF or TXT study material to get started</p>
+        <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-cloud-upload me-2"></i>Upload Your First Document
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Upload Study Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.upload_document') }}" enctype="multipart/form-data" id="uploadForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Document Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Chapter 5 – Cell Biology" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Subject <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="text" name="subject" class="form-control" placeholder="e.g. Biology, Mathematics">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">File</label>
+                        <div class="upload-drop-zone" id="dropZone">
+                            <input type="file" name="file" id="fileInput" accept=".pdf,.txt" class="d-none" required>
+                            <i class="bi bi-cloud-upload fs-2 text-primary mb-2"></i>
+                            <div class="fw-medium">Click or drag &amp; drop your file here</div>
+                            <div class="text-muted small mt-1">PDF or TXT, max 16 MB</div>
+                            <div id="fileName" class="mt-2 text-primary small d-none"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Description <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea name="description" class="form-control" rows="2"
+                                  placeholder="Brief description of the content"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-cloud-upload me-2"></i>Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// File upload drop zone
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+function setFile(file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    fileInput.files = dt.files;
+    fileName.textContent = file.name;
+    fileName.classList.remove('d-none');
+}
+
+// Init tooltips
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el, { trigger: 'hover' });
+});
+</script>
+{% endblock %}

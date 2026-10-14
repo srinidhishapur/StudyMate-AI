@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+{% block body_class %}landing-page{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark studymate-navbar-transparent">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
+            <div class="brand-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div>
+                <span class="brand-name">StudyMate</span>
+                <span class="brand-ai">AI</span>
+            </div>
+        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm px-4">Sign In</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-sm px-4 text-primary fw-semibold">Get Started</a>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="landing-hero">
+    <div class="container">
+        <div class="row align-items-center min-vh-100 py-5">
+            <div class="col-lg-6 text-white">
+                <div class="hero-badge mb-3">
+                    <i class="bi bi-stars me-2"></i>Powered by IBM watsonx AI
+                </div>
+                <h1 class="display-4 fw-bold mb-4 lh-sm">
+                    Study Smarter<br>
+                    with <span class="text-warning">AI Power</span>
+                </h1>
+                <p class="lead mb-5 opacity-90">
+                    Upload your study materials and let our AI generate summaries, quizzes, flashcards,
+                    and personalized study plans. Chat with your notes and track your learning progress.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="{{ url_for('auth.register') }}"
+                       class="btn btn-warning btn-lg px-5 fw-semibold">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Start for Free
+                    </a>
+                    <a href="{{ url_for('auth.login') }}"
+                       class="btn btn-outline-light btn-lg px-5">
+                        Sign In
+                    </a>
+                </div>
+                <div class="mt-5 d-flex gap-4 flex-wrap">
+                    <div class="hero-stat">
+                        <div class="h4 fw-bold mb-0">100%</div>
+                        <small class="opacity-75">AI-Powered</small>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="h4 fw-bold mb-0">PDF &amp; TXT</div>
+                        <small class="opacity-75">Supported Formats</small>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="h4 fw-bold mb-0">RAG</div>
+                        <small class="opacity-75">Chat with Notes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-flex justify-content-center">
+                <div class="hero-card-stack">
+                    <div class="hero-feature-card">
+                        <i class="bi bi-file-earmark-text-fill text-primary fs-2"></i>
+                        <div>
+                            <div class="fw-semibold">AI Summaries</div>
+                            <small class="text-muted">Exam-oriented notes from your PDFs</small>
+                        </div>
+                    </div>
+                    <div class="hero-feature-card mt-3">
+                        <i class="bi bi-patch-question-fill text-warning fs-2"></i>
+                        <div>
+                            <div class="fw-semibold">Smart Quizzes</div>
+                            <small class="text-muted">Auto-generated MCQ assessments</small>
+                        </div>
+                    </div>
+                    <div class="hero-feature-card mt-3">
+                        <i class="bi bi-chat-dots-fill text-success fs-2"></i>
+                        <div>
+                            <div class="fw-semibold">RAG Chat</div>
+                            <small class="text-muted">Ask questions from your materials</small>
+                        </div>
+                    </div>
+                    <div class="hero-feature-card mt-3">
+                        <i class="bi bi-calendar-week-fill text-info fs-2"></i>
+                        <div>
+                            <div class="fw-semibold">Study Plans</div>
+                            <small class="text-muted">Personalized AI learning schedules</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-6 bg-white">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-dark">Everything You Need to Excel</h2>
+            <p class="text-muted lead">AI-powered tools designed for serious students</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-primary-soft">
+                        <i class="bi bi-file-earmark-richtext text-primary"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Smart Summarization</h5>
+                    <p class="text-muted small">Upload any PDF or TXT file and get AI-generated,
+                        exam-oriented summaries with key topics highlighted.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-warning-soft">
+                        <i class="bi bi-ui-checks text-warning"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Quiz Generator</h5>
+                    <p class="text-muted small">Automatically generate multiple-choice quizzes from
+                        your study materials with explanations for every answer.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-success-soft">
+                        <i class="bi bi-card-text text-success"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Flashcard Creator</h5>
+                    <p class="text-muted small">Create digital flashcards from your notes for
+                        spaced repetition learning and quick revision sessions.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-info-soft">
+                        <i class="bi bi-chat-left-dots text-info"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Chat with Notes (RAG)</h5>
+                    <p class="text-muted small">Ask questions directly about your uploaded materials
+                        using Retrieval-Augmented Generation powered by IBM watsonx.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-purple-soft">
+                        <i class="bi bi-calendar2-check text-purple"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Personalized Study Plans</h5>
+                    <p class="text-muted small">Get AI-crafted study schedules tailored to your
+                        goals, available time, and learning pace.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon bg-danger-soft">
+                        <i class="bi bi-bar-chart-fill text-danger"></i>
+                    </div>
+                    <h5 class="fw-semibold mt-3">Progress Tracking</h5>
+                    <p class="text-muted small">Monitor your learning journey with detailed analytics,
+                        quiz scores, and activity streaks over time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block footer %}
+<footer class="bg-dark text-white py-4">
+    <div class="container text-center">
+        <small class="text-muted">
+            &copy; 2024 StudyMate AI &mdash; Built with IBM watsonx &nbsp;&bull;&nbsp;
+            Problem Statement No. 13
+        </small>
+    </div>
+</footer>
+{% endblock %}
